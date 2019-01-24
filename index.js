@@ -27,7 +27,7 @@ var getSenders = function () {
     var senders = [];
     if (getEnv('SLACK_NT') === true) {
         var bot = new bots.slackBot(getEnv('SLACK_BOT_TOKEN'));
-        bot.setChannel(getEnv('SLACK_CHANNEL_ID'));
+        bot.channel = getEnv('SLACK_CHANNEL_ID');
         senders.push(bot);
     }
     return senders;

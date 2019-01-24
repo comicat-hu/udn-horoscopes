@@ -4,15 +4,13 @@ var slackBot = function (token) {
     var bot = new slack({ token });
 
     this.channel = '';
-
-    this.setChannel = function (channel) {
-        this.channel = channel;
-    }
+    this.unfurl_links = true;
 
     this.send = async function (text) { 
         var botResponse = await bot.chat.postMessage({
             channel: this.channel,
-            text
+            text,
+            unfurl_links: this.unfurl_links,
         });
         return botResponse;
     }
