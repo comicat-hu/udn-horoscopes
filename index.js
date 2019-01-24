@@ -18,8 +18,8 @@ var getEnv = function (key) {
 };
 
 log4js.configure({
-    appenders: { appLog: { type: 'file', filename: getEnv('LOG_PATH') } },
-    categories: { default: { appenders: ['appLog'], level: getEnv('LOGGER_LEVEL') || 'error' } }
+    appenders: { appLog: { type: 'file', filename: getEnv('LOG_PATH') }, console: { type: 'console' }},
+    categories: { default: { appenders: ['appLog', 'console'], level: getEnv('LOGGER_LEVEL') || 'error' } }
 });
 var logger = log4js.getLogger('appLog');
 
@@ -56,17 +56,17 @@ var run = async function () {
 
         var senders = getSenders();
 
-        senders.forEach(async function (sender) {
+        for (var sender of senders) {
             try {
-                var botResponse = await sender.send(sendText)
+                var botResponse = await sender.send(sendText);
 
-                logger.info('Send by ' + sender.constructor.name + ' - ');
+                logger.info('Send success by ' + sender.constructor.name + ' : ');
                 logger.info(botResponse);
             } catch (err) {
+                logger.error('Send failed by ' + sender.constructor.name + ' : ');
                 logger.error(err);
-                return false;
             }
-        });
+        }
     } catch (err) {
         logger.error(err);
     }
