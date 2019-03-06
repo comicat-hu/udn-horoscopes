@@ -1,6 +1,6 @@
 var axios = require('axios');
 var cheerio = require('cheerio');
-var moment = require('moment');
+var dayjs = require('dayjs');
 var log4js = require('log4js');
 var bots = require('./src/bots');
 
@@ -38,7 +38,7 @@ var run = async function () {
         var response = await axios.get('https://udn.com/search/tagging/2/%E6%98%9F%E5%BA%A7%E9%81%8B%E5%8B%A2');
         var $ = cheerio.load(response.data);
         var posts = $('#search_content > dl').children();
-        var date = moment().format('YYYY-MM-DD');
+        var date = dayjs().format('YYYY-MM-DD');
         var result = '';
         posts.each(function(i, element) {
             var text = $(element).text();

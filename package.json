@@ -11,9 +11,9 @@
   "dependencies": {
     "axios": "^0.18.0",
     "cheerio": "^1.0.0-rc.2",
+    "dayjs": "^1.8.8",
     "dotenv": "^6.2.0",
     "log4js": "^3.0.6",
-    "moment": "^2.23.0",
     "slack": "^11.0.1"
   }
 }
