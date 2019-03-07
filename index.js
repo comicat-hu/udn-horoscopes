@@ -42,7 +42,7 @@ var run = async function () {
         var result = '';
         posts.each(function(i, element) {
             var text = $(element).text();
-            if (text.includes('今日星座運勢') && text.includes(date)) {
+            if ((text.includes('今日星座運勢') || text.includes('每日星座運勢')) && text.includes(date)) {
                 result = $(element).find('a').attr('href');
                 return false;
             }
