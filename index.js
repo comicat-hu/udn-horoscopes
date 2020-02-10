@@ -37,7 +37,7 @@ var run = async function () {
     try {
         var response = await axios.get('https://udn.com/search/tagging/2/%E6%AF%8F%E6%97%A5%E6%98%9F%E5%BA%A7%E9%81%8B%E5%8B%A2');
         var $ = cheerio.load(response.data);
-        var posts = $('#search_content > dl').children();
+        var posts = $('body > main > div > section.wrapper-left > section > div.context-box__content.story-list__holder.story-list__holder--full').children();
         var date = dayjs().format('YYYY-MM-DD');
         var result = '';
         posts.each(function(i, element) {
