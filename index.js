@@ -33,6 +33,16 @@ var getSenders = function () {
     return senders;
 };
 
+var getErrorSenders = function () {
+    var senders = [];
+    if (getEnv('ERROR_SLACK_CHANNEL_ID')) {
+        var bot = new bots.slackBot(getEnv('SLACK_BOT_TOKEN'));
+        bot.channel = getEnv('ERROR_SLACK_CHANNEL_ID');
+        senders.push(bot);
+    }
+    return senders;
+};
+
 var run = async function () {
     try {
         var response = await axios.get('https://udn.com/search/tagging/2/%E6%AF%8F%E6%97%A5%E6%98%9F%E5%BA%A7%E9%81%8B%E5%8B%A2');
@@ -69,5 +79,15 @@ var run = async function () {
         }
     } catch (err) {
         logger.error(err);
+
+        var errorSenders = getErrorSenders();
+        for (var sender of errorSenders) {
+            try {
+                var botResponse = await sender.send(err.toString() + err.stack);
+            } catch (err2) {
+                logger.error('Send failed by ' + sender.constructor.name + ' : ');
+                logger.error(err2);
+            }
+        }
     }
 }();
