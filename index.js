@@ -43,51 +43,66 @@ var getErrorSenders = function () {
     return senders;
 };
 
-var run = async function () {
-    try {
-        var response = await axios.get('https://udn.com/search/tagging/2/%E6%AF%8F%E6%97%A5%E6%98%9F%E5%BA%A7%E9%81%8B%E5%8B%A2');
-        var $ = cheerio.load(response.data);
-        var posts = $('body > main > div > section.wrapper-left > section > div.context-box__content.story-list__holder.story-list__holder--full').children();
-        var date = dayjs().format('YYYY-MM-DD');
-        var result = '';
-        posts.each(function(i, element) {
-            var text = $(element).text();
-            if ((text.includes('今日星座運勢') || text.includes('每日星座運勢')) && text.includes(date)) {
-                result = $(element).find('a').attr('href');
-                return false;
-            }
-        });
-
-        if (!result) {
-            throw new Error('Result empty.');
-        }
-
-        var sendText = `${date}星座運勢\n${result}`;
-
-        var senders = getSenders();
-
-        for (var sender of senders) {
-            try {
-                var botResponse = await sender.send(sendText);
-
-                logger.info('Send success by ' + sender.constructor.name + ' : ');
-                logger.info(botResponse);
-            } catch (err) {
-                logger.error('Send failed by ' + sender.constructor.name + ' : ');
-                logger.error(err);
-            }
-        }
-    } catch (err) {
-        logger.error(err);
-
-        var errorSenders = getErrorSenders();
-        for (var sender of errorSenders) {
-            try {
-                var botResponse = await sender.send(err.toString() + err.stack);
-            } catch (err2) {
-                logger.error('Send failed by ' + sender.constructor.name + ' : ');
-                logger.error(err2);
-            }
+var sendError = async function (err) {
+    var errorSenders = getErrorSenders();
+    for (var sender of errorSenders) {
+        try {
+            var botResponse = await sender.send(err.stack);
+        } catch (err2) {
+            logger.error('Send failed by ' + sender.constructor.name + ' : ');
+            logger.error(err2);
         }
     }
-}();
+};
+
+var run = async function (url) {
+    var response = await axios.get(url);
+    var $ = cheerio.load(response.data);
+    var posts = $('body > main > div > section.wrapper-left > section > div.context-box__content.story-list__holder.story-list__holder--full').children();
+    var date = dayjs().format('YYYY-MM-DD');
+    var result = '';
+    posts.each(function(i, element) {
+        var text = $(element).text();
+        if ((text.includes('今日星座運勢') || text.includes('每日星座運勢')) && text.includes(date)) {
+            result = $(element).find('a').attr('href');
+            return false;
+        }
+    });
+
+    if (!result) {
+        throw new Error(`Result empty. (URL: ${url})`);
+    }
+
+    var sendText = `${date}星座運勢\n${result}`;
+
+    var senders = getSenders();
+
+    for (var sender of senders) {
+        try {
+            var botResponse = await sender.send(sendText);
+
+            logger.info('Send success by ' + sender.constructor.name + ' : ');
+            logger.info(botResponse);
+        } catch (err) {
+            logger.error(err);
+            sendError(err);
+        }
+    }
+};
+
+var urls = [
+    'https://udn.com/search/tagging/2/%E6%AF%8F%E6%97%A5%E6%98%9F%E5%BA%A7%E9%81%8B%E5%8B%A2',
+    'https://udn.com/search/tagging/2/%E6%98%9F%E5%BA%A7%E9%81%8B%E5%8B%A2',
+];
+
+(async () => {
+    for (let url of urls) {
+        try {
+            await run(url);
+            break;
+        } catch (err) {
+            logger.error(err);
+            await sendError(err);
+        }
+    }
+})();
