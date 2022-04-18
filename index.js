@@ -85,20 +85,89 @@ var run = async function (url) {
             logger.info(botResponse);
         } catch (err) {
             logger.error(err);
-            sendError(err);
+            await sendError(err);
         }
     }
 };
 
-var urls = [
-    'https://udn.com/search/tagging/2/%E6%AF%8F%E6%97%A5%E6%98%9F%E5%BA%A7%E9%81%8B%E5%8B%A2',
-    'https://udn.com/search/tagging/2/%E6%98%9F%E5%BA%A7%E9%81%8B%E5%8B%A2',
+var sendMessage = async function (message) {
+    var senders = getSenders();
+
+    for (var sender of senders) {
+        try {
+            var botResponse = await sender.send(message);
+
+            logger.info('Send success by ' + sender.constructor.name + ' : ');
+            logger.info(botResponse);
+        } catch (err) {
+            logger.error(err);
+            await sendError(err);
+        }
+    }
+};
+
+var getContentFromPage = async function (url) {
+    var response = await axios.get(url);
+    var $ = cheerio.load(response.data);
+    var posts = $('body > main > div > section.wrapper-left > section > div.context-box__content.story-list__holder.story-list__holder--full').children();
+    var date = dayjs().format('YYYY-MM-DD');
+    var result = '';
+    posts.each(function(i, element) {
+        var text = $(element).text();
+        if ((text.includes('今日星座運勢') || text.includes('每日星座運勢')) && text.includes(date)) {
+            result = $(element).find('a').attr('href');
+            return false;
+        }
+    });
+
+    if (!result) {
+        throw new Error(`Result empty from page. (URL: ${url})`);
+    }
+
+    var sendText = `${date}星座運勢\n${result}`;
+    return sendText;
+};
+
+var getContentFromApi = async function (url) {
+    var response = await axios.get(url);
+    var posts = response.data.lists;
+    var date = dayjs().format('YYYY-MM-DD');
+    var result = '';
+    posts.forEach(function(element, i) {
+        var text = element.title;
+        var datetime = element.time.date;
+        if ((text.includes('今日星座運勢') || text.includes('每日星座運勢')) && datetime.includes(date)) {
+            var link = element.titleLink;
+            result = `https://udn.com${link.substring(0, link.indexOf('?'))}`;
+            return false;
+        }
+    });
+
+    if (!result) {
+        throw new Error(`Result empty from api. (URL: ${url})`);
+    }
+
+    var sendText = `${date}星座運勢\n${result}`;
+    return sendText;
+};
+
+var contentFunctionCalls = [
+    async function () {
+        return await getContentFromPage('https://udn.com/search/tagging/2/%E6%AF%8F%E6%97%A5%E6%98%9F%E5%BA%A7%E9%81%8B%E5%8B%A2')
+    },
+    async function () {
+        return await getContentFromPage('https://udn.com/search/tagging/2/%E6%98%9F%E5%BA%A7%E9%81%8B%E5%8B%A2')
+    },
+    async function () {
+        return await getContentFromApi('https://udn.com/api/more?page=0&channelId=2&type=subcate_articles&cate_id=6649&sub_id=7268&totalRecNo=336&is_paywall=0&is_bauban=0&is_vision=0')
+    },
 ];
 
 (async () => {
-    for (let url of urls) {
+    for (let functionCall of contentFunctionCalls) {
         try {
-            await run(url);
+            let message = await functionCall();
+            await sendMessage(message);
             break;
         } catch (err) {
             logger.error(err);
